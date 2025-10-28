@@ -6,6 +6,7 @@ const repo = "Timeline";     // Replace with repo name
 const label = "timeline-note";     // GitHub label for notes
 const highlightColor = "#fff8dc";  // Background for unread notes
 
+
 // -----------------------------
 // Markdown rendering via GitHub API
 // -----------------------------
@@ -69,18 +70,20 @@ async function loadNotes() {
   // Render notes
   for (const issue of issues) {
     const htmlBody = await renderMarkdown(issue.body);
-    const isRead = readNotes[issue.id];
+    const isRead = !!readNotes[issue.id]; // normalize to true/false
 
     const el = document.createElement("div");
     el.className = "note";
     el.style.background = isRead ? "white" : highlightColor;
+
+    const markReadBtnHtml = !isRead ? `<button class="mark-read">Mark as read</button>` : "";
 
     el.innerHTML = `
       <h3>${issue.title}</h3>
       <div class="body">${htmlBody}</div>
       <small>By <b>${issue.user.login}</b> • ${new Date(issue.created_at).toLocaleDateString()}</small>
       <div style="margin-top:0.5rem">
-        ${!isRead ? `<button class="mark-read">Mark as read</button>` : ""}
+        ${markReadBtnHtml}
         <a href="${issue.html_url}#new_comment_field" target="_blank">
           <button>Leave a comment</button>
         </a>
@@ -95,13 +98,13 @@ async function loadNotes() {
       el.querySelector(".mark-read").addEventListener("click", () => {
         readNotes[issue.id] = true;
         saveReadNotes(readNotes);
-        
-        // This triggers the CSS transition
+
+        // Trigger smooth background transition
         el.style.background = "white";
-      
-        // Hide button
+
+        // Hide the button
         el.querySelector(".mark-read").style.display = "none";
-      
+
         // Update "Mark all as read" counter
         const allBtn = timeline.querySelector("button");
         if (allBtn) {

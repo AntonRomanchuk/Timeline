@@ -49,21 +49,14 @@ async function loadNotes() {
   const issues = await res.json();
 
   let readNotes = getReadNotes();
-  const isFirstVisit = Object.keys(readNotes).length === 0;
-
-  // On first visit, mark all existing notes as read
-  if (isFirstVisit) {
-    issues.forEach(issue => readNotes[issue.id] = true);
-    saveReadNotes(readNotes);
-  }
 
   // Compute unread notes
   const unreadNotes = issues.filter(issue => !readNotes[issue.id]);
 
-  // Add "Mark all as read" button if more than 1 unread
-  if (unreadNotes.length > 1) {
+  // Add "Mark all as read" button above the list if there are unread notes
+  if (unreadNotes.length > 0) {
     const markAllBtn = document.createElement("button");
-    markAllBtn.textContent = "Mark all as read";
+    markAllBtn.textContent = `Mark all as read (${unreadNotes.length})`;
     markAllBtn.style.marginBottom = "1rem";
     markAllBtn.addEventListener("click", () => {
       unreadNotes.forEach(issue => readNotes[issue.id] = true);
@@ -73,6 +66,7 @@ async function loadNotes() {
     timeline.appendChild(markAllBtn);
   }
 
+  // Render notes
   for (const issue of issues) {
     const htmlBody = await renderMarkdown(issue.body);
     const isRead = readNotes[issue.id];
@@ -86,7 +80,7 @@ async function loadNotes() {
       <div class="body">${htmlBody}</div>
       <small>By <b>${issue.user.login}</b> • ${new Date(issue.created_at).toLocaleDateString()}</small>
       <div style="margin-top:0.5rem">
-        <button class="mark-read">Mark as read</button>
+        ${!isRead ? `<button class="mark-read">Mark as read</button>` : ""}
         <a href="${issue.html_url}#new_comment_field" target="_blank">
           <button>Leave a comment</button>
         </a>
@@ -97,11 +91,29 @@ async function loadNotes() {
     timeline.appendChild(el);
 
     // Mark single note as read
-    el.querySelector(".mark-read").addEventListener("click", () => {
-      readNotes[issue.id] = true;
-      saveReadNotes(readNotes);
-      el.style.background = "white";
-    });
+    if (!isRead) {
+      el.querySelector(".mark-read").addEventListener("click", () => {
+        readNotes[issue.id] = true;
+        saveReadNotes(readNotes);
+        
+        // This triggers the CSS transition
+        el.style.background = "white";
+      
+        // Hide button
+        el.querySelector(".mark-read").style.display = "none";
+      
+        // Update "Mark all as read" counter
+        const allBtn = timeline.querySelector("button");
+        if (allBtn) {
+          const remaining = unreadNotes.length - 1;
+          if (remaining > 0) {
+            allBtn.textContent = `Mark all as read (${remaining})`;
+          } else {
+            allBtn.remove();
+          }
+        }
+      });
+    }
   }
 
   // Apply syntax highlighting

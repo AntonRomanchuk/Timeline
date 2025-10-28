@@ -10,6 +10,13 @@ body {
   padding: 1rem;
   margin-bottom: 1rem;
 }
+
 .note h3 {
   margin-top: 0;
+}
+
+.note button {
+  margin-right: 0.5rem;
+  padding: 0.25rem 0.5rem;
+  cursor: pointer;
 }
